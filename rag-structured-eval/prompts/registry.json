@@ -1,0 +1,43 @@
+{
+  "system_v1": {
+    "file": "system_v1.md",
+    "version": "1.0",
+    "created": "2026-09-19",
+    "compatible_models": [
+      "qwen2.5:7b-instruct",
+      "llama3.2:3b-instruct-q4_K_M",
+      "llama3.2:3b-instruct-q5_K_M",
+      "phi4-mini:3.8b-q4_K_M",
+      "phi4-mini:3.8b-q8_0",
+      "mistral:7b-instruct-q4_K_M",
+      "mistral:7b-instruct-q5_K_M"
+    ],
+    "notes": "Adapts agent/loop.py's SYSTEM_PROMPT citation/hedging rules for structured JSON output produced after an agentic tool-calling phase (see DESIGN.md section 7)."
+  },
+  "system_v2": {
+    "file": "system_v2.md",
+    "version": "2.0",
+    "created": "2026-09-20",
+    "compatible_models": [
+      "qwen2.5:7b-instruct",
+      "llama3.2:3b-instruct-q4_K_M",
+      "llama3.2:3b-instruct-q5_K_M",
+      "phi4-mini:3.8b-q4_K_M",
+      "phi4-mini:3.8b-q8_0"
+    ],
+    "notes": "Fixes v1's over-abstention: stage1-validation run showed 100% citation/grounding accuracy but only 20% (2/10) of genuinely-answerable questions were actually answered — the model said has_sufficient_context=false despite having on-topic retrieved chunks, on 8/10. v2 explicitly tells the model that synthesis across a chunk or two is not a reason to abstain, and narrows abstention to 'nothing on-topic was retrieved.'"
+  },
+  "system_v3": {
+    "file": "system_v3.md",
+    "version": "3.0",
+    "created": "2026-09-30",
+    "compatible_models": [
+      "qwen2.5:7b-instruct",
+      "llama3.2:3b-instruct-q4_K_M",
+      "llama3.2:3b-instruct-q5_K_M",
+      "phi4-mini:3.8b-q4_K_M",
+      "phi4-mini:3.8b-q8_0"
+    ],
+    "notes": "Short reader prompt for the explicitly-built final call (generate.py's build_final_messages): the passages are placed in the user message as a labelled CONTEXT block, so this prompt says nothing about tools. Kept short on purpose — v1/v2 cost ~350-450 tokens of a 1024-token context. Not for the agentic tool-calling rounds; those still use system_v1."
+  }
+}

@@ -1,0 +1,21 @@
+# --- Core ---
+python-dotenv>=1.0
+
+# --- Document loading (Phase 1) ---
+pypdf>=4.0
+python-docx>=1.1
+
+# --- Chunking (Phase 1) ---
+langchain-text-splitters>=0.2
+tiktoken>=0.7
+
+# --- Vector store (Phase 1) ---
+faiss-cpu>=1.8
+numpy>=1.26
+
+# --- LLM / embeddings (Phase 1 uses embeddings only; Phase 2 uses chat + tool calling) ---
+openai>=1.40
+anthropic>=0.34
+
+# --- UI (Phase 5 — not needed until then, listed here for one requirements.txt to rule them all) ---
+streamlit>=1.37

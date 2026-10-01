@@ -1,0 +1,18 @@
+# virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# secrets
+.env
+
+# data — source documents and the index built from them may be sensitive; never commit
+data/raw_docs/*
+!data/raw_docs/.gitkeep
+data/faiss_index/*
+!data/faiss_index/.gitkeep
+data/manifest.json
+
+# OS cruft
+.DS_Store
+Thumbs.db

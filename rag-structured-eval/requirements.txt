@@ -1,0 +1,13 @@
+pandas>=2.2
+matplotlib>=3.9
+tabulate>=0.9
+
+# --- Hybrid retrieval + reranking (Stage 2.5) ---
+# IMPORTANT on this machine (GPU-less, documented tight disk history — see
+# DESIGN.md section 3): install the CPU-only torch wheel FIRST, before
+# `pip install -r requirements.txt`, so pip doesn't resolve a much larger
+# CUDA build:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers>=3.0
+# SQLite FTS5 (lexical/BM25 side) needs no separate pip package — it's part
+# of Python's built-in sqlite3 module (confirmed available: sqlite3.sqlite_version 3.50.4).

@@ -1,0 +1,8 @@
+eval/runs/
+__pycache__/
+*.pyc
+*.log
+
+# generated lexical index (rebuild via scripts.build_lexical_index) — same
+# treatment as the parent repo's data/faiss_index/, never committed
+data/
