@@ -6,6 +6,7 @@ Read `DESIGN.md` for the full technical design and rationale. Read `PROGRESS.md`
 
 ## Setup (one-time)
 
+0. The shared venv lives at the repo root (`Personal RAG Assistant\.venv`, Python 3.13). To recreate it: `py -3.13 -m venv .venv`, then steps 2-3 below plus `.venv\Scripts\python.exe -m pip install -r requirements.txt` for the parent project's own requirements. A venv cannot be moved or outlive the Python it was built from — recreate it rather than copying it.
 1. Run `scripts/setup_ollama_models.ps1` — upgrades Ollama, moves the model store to `D:\ollama-models` (this machine's `C:` drive is nearly full), and pulls the 6 new model variants.
 2. **Install the CPU-only torch wheel first** (hybrid retrieval's reranker needs `sentence-transformers`, which pulls in `torch` — on this GPU-less machine, installing torch before the main requirements file keeps pip from resolving a much larger CUDA build):
    ```
@@ -25,11 +26,19 @@ cd rag-structured-eval
 ```
 
 - **Stage 0 (smoke test)**: `..\.venv\Scripts\python.exe -m scripts.smoke_test`
-- **Stage 1 (single-question structured pipeline)**: `..\.venv\Scripts\python.exe generate.py --question "..." --model <model> --prompt-id system_v1 --temperature 0.0`
-- **Stage 2 (temperature sweep)**: `..\.venv\Scripts\python.exe -m eval.run_eval --model <model> --prompt-id system_v1 --temperatures 0.0,0.3,0.7,1.0 --run-id <name>`
+- **Stage 1 (single-question structured pipeline)**: `..\.venv\Scripts\python.exe generate.py --question "..." --model <model> --temperature 0.0`
+- **Stage 2 (temperature sweep)**: `..\.venv\Scripts\python.exe -m eval.run_eval --model <model> --temperatures 0.0,0.3,0.7,1.0 --run-id <name>`
 - **Stage 2.5 (retrieval-only eval, no LLM calls, seconds not minutes)**: `..\.venv\Scripts\python.exe -m eval.retrieval_eval --mode both` — precision@k/recall@k/MRR/nDCG@k for dense-only vs. hybrid retrieval, plus a gate-threshold sanity check against the unanswerable golden questions. Run this before trusting any live LLM run against the hybrid pipeline. See `DESIGN.md` section 11 for the full design and an important calibration caveat about the current small sample corpus.
 - **Quality gate**: `..\.venv\Scripts\python.exe -m eval.gate --run-id <name>`
-- **Stage 3 (full model comparison)**: `..\.venv\Scripts\python.exe compare_models.py --prompt-id system_v1 --temperature <best> --run-id <name>` then `..\.venv\Scripts\python.exe analyze_results.py --run-id <name>`
+- **Stage 3 (full model comparison)**: `..\.venv\Scripts\python.exe compare_models.py --temperature <best> --run-id <name>` then `..\.venv\Scripts\python.exe analyze_results.py --run-id <name>`
+
+`generate.py`, `eval.run_eval` and `compare_models.py` share these flags (see `DESIGN.md` section 12):
+
+- `--mode retrieve_first` (default) retrieves in code and makes one structured call per question. `--mode agentic` lets the model drive retrieval through a query-only `retrieve` tool; `--tool-prompt-id` (default `system_v1`) is the system prompt for those tool rounds.
+- `--prompt-id` (default `system_v3`) is the reader prompt for the final structured call, in both modes.
+- `--num-ctx` (default 1024) is the context size the final prompt is budgeted for. It must match the `OLLAMA_CONTEXT_LENGTH` the server was started with (`scripts\start_ollama_tuned.bat`).
+
+Each run directory gets a `trace.jsonl` alongside `metrics.jsonl` and `results.jsonl`: every retrieval or tool call, the exact final prompt, and the raw final response. Read it first when a result looks wrong.
 
 `generate.py`, `eval.run_eval`, and `compare_models.py` all build a hybrid (dense + lexical + reranked) retriever automatically as of Stage 2.5 — no new flags needed for these existing commands, but they do require the lexical index to have been built first (setup step 5 above).
 

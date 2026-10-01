@@ -2,9 +2,9 @@
 reranking + a retrieval-quality report into the one retrieve() call sites
 across this project already know how to use — DESIGN.md section 11.
 
-RETRIEVE_TOOL_SCHEMA (the model-facing tool contract: name, params,
-description) is reused from agent.tools UNCHANGED — only what happens
-behind the tool dispatch differs from the dense-only version.
+The model-facing tool contract is this module's own query-only
+RETRIEVE_TOOL_SCHEMA, not agent.tools' (see the comment on it below);
+generate.py dispatches the tool call itself.
 """
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from agent.tools import Retriever  # noqa: E402
 from ingest.embeddings import get_embedder  # noqa: E402
-from ingest.metadata import VALID_DOC_TYPES, VALID_TOPICS  # noqa: E402
 
 from .fusion import DEFAULT_RRF_K, fuse  # noqa: E402
 from .lexical_index import LexicalStore  # noqa: E402
@@ -92,37 +91,6 @@ class HybridRetriever:
 
         self.last_quality_report = assess_quality(query, dense_hits, lexical_hits, fused, reranked)
         return reranked[:top_k]
-
-
-def make_hybrid_retrieve_tool(hybrid: HybridRetriever):
-    """Same call signature / same {"results": [...]} | {"error": ...} |
-    {"results": [], "note": ...} return shape as agent.tools.make_retrieve_tool,
-    so generate.py's swap is a one-line import change, nothing else."""
-
-    def _retrieve(
-        query: str,
-        doc_type: str | None = None,
-        topic: str | None = None,
-        top_k: int = 5,
-    ) -> dict:
-        if doc_type is not None and doc_type not in VALID_DOC_TYPES:
-            return {"error": f"Invalid doc_type {doc_type!r}. Valid: {sorted(VALID_DOC_TYPES)}"}
-        if topic is not None and topic not in VALID_TOPICS:
-            return {"error": f"Invalid topic {topic!r}. Valid: {sorted(VALID_TOPICS)}"}
-        # Tool-call arguments are model-generated JSON, not schema-enforced —
-        # some models emit top_k as a string. Coerce defensively at this
-        # boundary, matching agent/tools.py's make_retrieve_tool.
-        try:
-            top_k = int(top_k) if top_k else 5
-        except (TypeError, ValueError):
-            return {"error": f"Invalid top_k {top_k!r}: must be an integer."}
-
-        chunks = hybrid.retrieve(query, doc_type=doc_type, topic=topic, top_k=top_k)
-        if not chunks:
-            return {"results": [], "note": "No matching chunks found in the corpus."}
-        return {"results": [c.as_dict() for c in chunks]}
-
-    return _retrieve
 
 
 def build_default_hybrid_retriever(embed_provider: str = "ollama") -> HybridRetriever:
